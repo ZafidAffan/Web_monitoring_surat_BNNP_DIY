@@ -32,8 +32,6 @@ class _DashboardPageState extends State<DashboardPage> {
           totalSuratMasuk = data["total"];
           loading = false;
         });
-      } else {
-        print("Gagal mengambil data surat masuk");
       }
     } catch (e) {
       print("Error API: $e");
@@ -62,15 +60,21 @@ class _DashboardPageState extends State<DashboardPage> {
                   style: TextStyle(color: Colors.white, fontSize: 24),
                 ),
               ),
+
               buildMenuItem(Icons.dashboard, "Dashboard", () {
                 Navigator.pop(context);
               }),
+
               buildMenuItem(Icons.add, "Tambah Surat", () {
                 Navigator.pushNamed(context, "/tambah-surat");
               }),
+
+
+
               buildMenuItem(Icons.sync_alt, "Tracking Surat", () {
                 Navigator.pushNamed(context, "/tracking-surat");
               }),
+
               buildMenuItem(Icons.logout, "Logout", () {
                 Navigator.pushReplacementNamed(context, "/login");
               }),
@@ -82,7 +86,6 @@ class _DashboardPageState extends State<DashboardPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // GAMBAR HEADER
             Container(
               height: 160,
               width: double.infinity,
@@ -96,7 +99,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
             const SizedBox(height: 15),
 
-            // SEARCH BAR
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: TextField(
@@ -114,7 +116,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
             const SizedBox(height: 20),
 
-            // CARD STATISTIK
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Column(
@@ -140,8 +141,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),

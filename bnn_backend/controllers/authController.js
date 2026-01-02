@@ -1,6 +1,6 @@
 const db = require('../db');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 exports.login = (req, res) => {
   const { email, password } = req.body;
@@ -17,7 +17,7 @@ exports.login = (req, res) => {
       return res.status(401).json({ message: 'Password salah' });
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, divisi: user.divisi },
+      { id_user: user.id_user, role: user.role, divisi: user.id_divisi },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -25,7 +25,7 @@ exports.login = (req, res) => {
     res.json({
       token,
       role: user.role,
-      divisi: user.divisi,
+      divisi: user.id_divisi,
       nama: user.nama
     });
   });

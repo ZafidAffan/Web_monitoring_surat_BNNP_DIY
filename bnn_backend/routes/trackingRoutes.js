@@ -1,14 +1,18 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+const trackingController = require('../controllers/trackingController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-const {
-    createTracking,
-    getTrackingBySurat,
-    updateTrackingStatus
-} = require("../controllers/trackingController");
+router.get(
+  '/',
+  authMiddleware,
+  trackingController.getAllTracking
+);
 
-router.post("/", createTracking);
-router.get("/:id_surat", getTrackingBySurat);
-router.put("/:id_surat", updateTrackingStatus);
+router.get(
+  '/surat/:id_surat',
+  authMiddleware,
+  trackingController.getTrackingBySurat
+);
 
 module.exports = router;

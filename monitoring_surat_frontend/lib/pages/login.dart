@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:html' as html; // Flutter Web localStorage
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -26,37 +27,68 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => isLoading = true);
 
     try {
-      final url = Uri.parse(
-        "http://localhost:3000/api/auth/login",
-      ); // ganti ke IP LAN saat di device
       final response = await http.post(
-        url,
+        Uri.parse("http://127.0.0.1:3000/api/auth/login"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"email": emailC.text, "password": passC.text}),
+        body: jsonEncode({
+          "email": emailC.text,
+          "password": passC.text,
+        }),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        final String token = data['token'];
+        final Map<String, dynamic> user = data['user'];
+
+        final String role = user['role'];
+        final String divisi = user['divisi'] ?? '';
+        final String nama = user['nama'] ?? user['email'];
+
+        // 🔐 SIMPAN KE LOCAL STORAGE
+        html.window.localStorage['token'] = token;
+        html.window.localStorage['role'] = role;
+        html.window.localStorage['divisi'] = divisi;
+        html.window.localStorage['nama'] = nama;
+
+        debugPrint("TOKEN  : $token");
+        debugPrint("ROLE   : $role");
+        debugPrint("DIVISI : $divisi");
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Login berhasil, selamat datang ${data['user']['nama']}",
-            ),
-          ),
+          SnackBar(content: Text("Login berhasil, selamat datang $nama")),
         );
 
-        // ⬅️ Arahkan ke halaman lain
-        Navigator.pushReplacementNamed(context, "/dashboard");
+        // 🚦 ROUTING BERDASARKAN ROLE & DIVISI
+        if (role == 'admin') {
+          // ✅ ADMIN → DASHBOARD MONITORING SURAT
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } 
+        else if (role == 'kepala') {
+          Navigator.pushReplacementNamed(context, '/kepala');
+        } 
+        else if (role == 'umum') {
+          // ✅ DIVISI UMUM (punya fitur disposisi)
+          Navigator.pushReplacementNamed(context, '/umum');
+        } 
+        else if (role == 'divisi') {
+          // ✅ DIVISI LAIN (P2M, Rehab, dll)
+          Navigator.pushReplacementNamed(context, '/divisi');
+        } 
+        else {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data["message"] ?? "Login gagal")),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
 
     setState(() => isLoading = false);
@@ -68,10 +100,9 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.white,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(25.0),
+          padding: const EdgeInsets.all(25),
           child: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
                   "Login",
@@ -83,10 +114,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // EMAIL
                 TextField(
                   controller: emailC,
-                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: "Email",
                     border: OutlineInputBorder(
@@ -97,7 +126,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // PASSWORD
                 TextField(
                   controller: passC,
                   obscureText: true,
@@ -111,7 +139,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 50,

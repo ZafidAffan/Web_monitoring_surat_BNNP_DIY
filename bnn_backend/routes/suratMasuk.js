@@ -1,60 +1,29 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const suratMasukController = require('../controllers/suratMasukController');
 
-const {
-  createSuratMasuk,
-  getSuratMasuk,
-  getSuratMasukById,
-  updateSuratMasuk,
-  deleteSuratMasuk,
-  countSuratMasuk
-} = require('../controllers/suratMasukController');
+// ================= MULTER =================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + ext);
+  }
+});
 
-const {
-  verifyToken,
-  allowRoles
-} = require('../middleware/authMiddleware');
+const upload = multer({ storage });
 
-/* ================= ROUTES ================= */
-
-// ⬅️ COUNT HARUS PALING ATAS (SEBELUM /:id)
-router.get(
-  '/count',
-  verifyToken,
-  allowRoles('admin', 'kepala'),
-  countSuratMasuk
-);
-
+// ================= ROUTES =================
 router.post(
   '/',
-  verifyToken,
-  allowRoles('admin'),
-  createSuratMasuk
+  upload.single('file_surat'), // field harus sama dengan frontend
+  suratMasukController.createSuratMasuk
 );
 
-router.get(
-  '/',
-  verifyToken,
-  allowRoles('admin', 'kepala', 'divisi'),
-  getSuratMasuk
-);
-
-router.get(
-  '/:id',
-  verifyToken,
-  getSuratMasukById
-);
-
-router.put(
-  '/:id',
-  verifyToken,
-  updateSuratMasuk
-);
-
-router.delete(
-  '/:id',
-  verifyToken,
-  deleteSuratMasuk
-);
+router.get('/', suratMasukController.getSuratMasuk);
 
 module.exports = router;

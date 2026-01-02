@@ -1,34 +1,14 @@
 const jwt = require('jsonwebtoken');
 
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+module.exports = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Unauthorized: token tidak ditemukan' });
 
-  if (!authHeader) {
-    return res.status(401).json({ message: 'Token tidak ada' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id, role, divisi }
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Unauthorized: token tidak valid' });
   }
-
-  const token = authHeader.split(' ')[1];
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: 'Token tidak valid' });
-    }
-
-    req.user = decoded; // { id, role }
-    next();
-  });
-};
-
-const allowRoles = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Akses ditolak' });
-    }
-    next();
-  };
-};
-
-module.exports = {
-  verifyToken,
-  allowRoles
 };

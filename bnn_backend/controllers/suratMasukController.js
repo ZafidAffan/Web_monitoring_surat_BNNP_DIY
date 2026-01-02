@@ -1,116 +1,73 @@
-const db = require('../config/db');
+const mysql = require('mysql2');
+const path = require('path');
 
-/* ================= CREATE ================= */
+// ================= KONEKSI DATABASE =================
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'bnn_surat_2'
+});
+
+db.connect(err => {
+  if (err) throw err;
+  console.log('Database connected');
+});
+
+// ================= CREATE SURAT MASUK =================
 exports.createSuratMasuk = (req, res) => {
-  console.log("BODY DITERIMA:", req.body);
+  try {
+    const { no_surat, tanggal_surat, tanggal_terima, dari, perihal } = req.body;
 
-  const {
-    no_surat,
-    tanggal_surat,
-    tanggal_terima,
-    dari,
-    perihal
-  } = req.body;
-
-  const sql = `
-    INSERT INTO surat_masuk 
-    (no_surat, tanggal_surat, tanggal_terima, dari, perihal)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-
-  db.query(
-    sql,
-    [no_surat, tanggal_surat, tanggal_terima, dari, perihal],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err });
-
-      res.status(201).json({
-        message: "Surat masuk berhasil ditambahkan",
-        id: result.insertId
-      });
+    if (!req.file) {
+      return res.status(400).json({ message: 'File PDF wajib diupload' });
     }
-  );
+
+    if (!no_surat || !tanggal_surat || !tanggal_terima || !dari || !perihal) {
+      return res.status(400).json({ message: 'Semua field wajib diisi' });
+    }
+
+    const kodeTracking = 'TRK-' + Date.now();
+    const filePath = `/uploads/${req.file.filename}`;
+
+    const query = `
+      INSERT INTO surat_masuk (
+        no_surat,
+        tanggal_surat,
+        tanggal_terima,
+        dari,
+        perihal,
+        file_surat,
+        kode_tracking,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Menunggu')
+    `;
+
+    db.query(
+      query,
+      [no_surat, tanggal_surat, tanggal_terima, dari, perihal, filePath, kodeTracking],
+      (err) => {
+        if (err) {
+          console.error('ERROR INSERT SURAT:', err);
+          return res.status(500).json({ message: 'Gagal menyimpan surat' });
+        }
+
+        res.status(201).json({
+          message: 'Surat masuk berhasil ditambahkan',
+          kode_tracking: kodeTracking
+        });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-/* ================= GET ALL ================= */
+// ================= GET SURAT MASUK =================
 exports.getSuratMasuk = (req, res) => {
-  const sql = `SELECT * FROM surat_masuk ORDER BY id DESC`;
-
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err });
+  db.query("SELECT * FROM surat_masuk ORDER BY created_at DESC", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error ambil data' });
     res.json(results);
   });
-};
-
-/* ================= GET BY ID ================= */
-exports.getSuratMasukById = (req, res) => {
-  const { id } = req.params;
-
-  db.query(
-    `SELECT * FROM surat_masuk WHERE id = ?`,
-    [id],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err });
-      if (results.length === 0)
-        return res.status(404).json({ message: "Data tidak ditemukan" });
-
-      res.json(results[0]);
-    }
-  );
-};
-
-/* ================= UPDATE ================= */
-exports.updateSuratMasuk = (req, res) => {
-  const { id } = req.params;
-  const {
-    no_surat,
-    tanggal_surat,
-    tanggal_terima,
-    dari,
-    perihal
-  } = req.body;
-
-  const sql = `
-    UPDATE surat_masuk SET
-      no_surat = ?,
-      tanggal_surat = ?,
-      tanggal_terima = ?,
-      dari = ?,
-      perihal = ?
-    WHERE id = ?
-  `;
-
-  db.query(
-    sql,
-    [no_surat, tanggal_surat, tanggal_terima, dari, perihal, id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json({ message: "Surat masuk berhasil diupdate" });
-    }
-  );
-};
-
-/* ================= DELETE ================= */
-exports.deleteSuratMasuk = (req, res) => {
-  const { id } = req.params;
-
-  db.query(
-    `DELETE FROM surat_masuk WHERE id = ?`,
-    [id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json({ message: "Surat masuk berhasil dihapus" });
-    }
-  );
-};
-
-/* ================= COUNT ================= */
-exports.countSuratMasuk = (req, res) => {
-  db.query(
-    `SELECT COUNT(*) AS total FROM surat_masuk`,
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json(results[0]);
-    }
-  );
 };

@@ -1,9 +1,8 @@
-exports.allowRoles = (...roles) => {
+module.exports = function (...allowedRoles) {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: 'Akses ditolak'
-      });
+    const role = req.user.role;
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({ message: 'Forbidden: akses ditolak' });
     }
     next();
   };

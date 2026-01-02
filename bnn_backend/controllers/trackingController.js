@@ -1,78 +1,100 @@
-const db = require("../config/db");
+const mysql = require('mysql2');
 
-// ==========================================
-// CREATE tracking (POST)
-// ==========================================
-exports.createTracking = (req, res) => {
-    const {
-        id_surat,
-        status,
-        keterangan,
-        id_divisi,
-        id_subdivisi,
-        id_user
-    } = req.body;
+// ================= DATABASE =================
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'bnn_surat_2',
+});
 
-    const sql = `
-        INSERT INTO tracking 
-        (id_surat, status, keterangan, id_divisi, id_subdivisi, id_user, waktu)
-        VALUES (?, ?, ?, ?, ?, ?, NOW())
-    `;
+// ================= GET ALL TRACKING =================
+// GET /api/tracking
+exports.getAllTracking = (req, res) => {
+  const query = `
+    SELECT 
+      st.id_tracking,
+      st.id_surat,
+      sm.no_surat,
+      sm.perihal,
+      st.status,
+      st.keterangan,
+      st.id_divisi,
+      st.id_user,
+      st.waktu
+    FROM surat_tracking st
+    INNER JOIN surat_masuk sm 
+      ON sm.id_surat = st.id_surat
+    ORDER BY st.waktu DESC
+  `;
 
-    db.query(
-        sql,
-        [id_surat, status, keterangan, id_divisi, id_subdivisi, id_user],
-        (err, result) => {
-            if (err) return res.status(500).json({ error: err });
+  console.log('📄 QUERY getAllTracking');
 
-            res.json({
-                message: "Tracking berhasil ditambahkan",
-                id_tracking: result.insertId
-            });
-        }
-    );
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('🔥 ERROR getAllTracking:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mengambil data tracking',
+        error: err.sqlMessage || err.message,
+      });
+    }
+
+    res.status(200).json(results);
+  });
 };
 
-// ==========================================
-// GET tracking berdasarkan id_surat
-// ==========================================
+// ================= GET TRACKING BY ID SURAT =================
+// GET /api/tracking/surat/:id_surat
 exports.getTrackingBySurat = (req, res) => {
-    const sql = `
-        SELECT * FROM tracking 
-        WHERE id_surat = ?
-        ORDER BY waktu ASC
-    `;
+  const { id_surat } = req.params;
 
-    db.query(sql, [req.params.id_surat], (err, result) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json(result);
+  console.log('➡️ GET /tracking/surat/:id');
+  console.log('📌 id_surat:', id_surat);
+
+  if (!id_surat) {
+    return res.status(400).json({
+      success: false,
+      message: 'id_surat wajib diisi',
     });
-};
+  }
 
-// ==========================================
-// UPDATE tracking (status terbaru)
-// ==========================================
-exports.updateTrackingStatus = (req, res) => {
-    const { status, keterangan, id_divisi, id_subdivisi, id_user } = req.body;
+  const query = `
+    SELECT 
+      st.id_tracking,
+      st.id_surat,
+      sm.no_surat,
+      sm.perihal,
+      st.status,
+      st.keterangan,
+      st.id_divisi,
+      st.id_user,
+      st.waktu
+    FROM surat_tracking st
+    INNER JOIN surat_masuk sm 
+      ON sm.id_surat = st.id_surat
+    WHERE st.id_surat = ?
+    ORDER BY st.waktu ASC
+  `;
 
-    const sql = `
-        UPDATE tracking SET 
-            status = ?, 
-            keterangan = ?, 
-            id_divisi = ?, 
-            id_subdivisi = ?, 
-            id_user = ?, 
-            waktu = NOW()
-        WHERE id_surat = ?
-    `;
+  console.log('📄 QUERY:', query);
 
-    db.query(
-        sql,
-        [status, keterangan, id_divisi, id_subdivisi, id_user, req.params.id_surat],
-        (err) => {
-            if (err) return res.status(500).json({ error: err });
+  db.query(query, [id_surat], (err, results) => {
+    if (err) {
+      console.error('🔥 ERROR getTrackingBySurat:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mengambil tracking surat',
+        error: err.sqlMessage || err.message,
+      });
+    }
 
-            res.json({ message: "Status tracking berhasil diperbarui" });
-        }
-    );
+    // ⛔ BUKAN ERROR → tracking memang belum ada
+    if (results.length === 0) {
+      console.warn('⚠️ Tracking kosong untuk id_surat:', id_surat);
+      return res.status(200).json([]);
+    }
+
+    res.status(200).json(results);
+  });
 };

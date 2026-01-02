@@ -5,23 +5,24 @@ const cors = require("cors");
 
 const app = express();
 
-// Middlewares
+// ================= MIDDLEWARE =================
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
-// Import routes
-const authRoutes = require("./routes/auth");
-const trackingRoute = require("./routes/trackingRoutes");
+// ================= ROUTES =================
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/tracking", require("./routes/trackingRoutes"));
+app.use("/api/surat-masuk", require("./routes/suratMasuk"));
+app.use("/api/aksi", require("./routes/suratAksiRoutes"));
+app.use("/api/disposisi", require("./routes/disposisiRoutes"));
+app.use("/api/template-perintah", require("./routes/templatePerintahRoutes"));
 
-// Register routes
-app.use("/api/auth", authRoutes);
-app.use('/api/tracking', trackingRoute);
-app.use('/api/surat-masuk', require('./routes/suratMasuk'));
-app.use('/api/disposisi', require('./routes/disposisi'));
+// ✅ DASHBOARD DIVISI (FIX PREFIX)
+app.use("/api/divisi", require("./routes/disposisiDivisiRoutes"));
 
-
-// Start server
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
